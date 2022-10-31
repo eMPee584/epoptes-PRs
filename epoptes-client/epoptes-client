@@ -116,7 +116,7 @@ re() {
     "$@" || echo die "Command failed: $*"
 }
 
-wait_for_dns() {
+wait_for_server() {
     # Don't wait for DNS if SERVER is an IP
     if [ -z "$(echo "$SERVER" | tr -d '0-9.')" ]; then
         server_ip=$SERVER
@@ -125,12 +125,15 @@ wait_for_dns() {
     delay=60
     while true; do
         server_ip=$(getent hosts "$SERVER" | awk '{ print $1; exit }')
+
+        # If IP was successfully resolved, break from loop
         test -n "$server_ip" && break
-        # If SERVER is not an MDNS name
-        if [ "${SERVER%.local}" = "${SERVER}" ]; then
-            # If DNS is not up yet, retry, otherwise abort
-            server_ip=$(getent hosts "ntp.org" | awk '{ print $1; exit }')
-        fi
+
+        # If SERVER is an MDNS name, continue loop
+        [ "${SERVER%.local}" != "${SERVER}" ] && continue
+
+        # If ntp.org does not resolve, DNS is not up yet, retry, otherwise abort
+        server_ip=$(getent hosts "ntp.org" | awk '{ print $1; exit }')
         if [ -z "$server_ip" ]; then
             echo "Cannot resolve $SERVER, postponing for $delay seconds..."
             sleep $delay
@@ -222,7 +225,7 @@ else
     re cd /usr/share/epoptes-client
 fi
 
-wait_for_dns
+wait_for_server
 apply_wol
 printf "Epoptes-client connecting to %s:%s..." "$SERVER" "$PORT"
 
