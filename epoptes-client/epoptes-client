@@ -129,8 +129,8 @@ wait_for_server() {
         # If IP was successfully resolved, break from loop
         test -n "$server_ip" && break
 
-        # If SERVER is an MDNS name, continue loop
-        [ "${SERVER%.local}" != "${SERVER}" ] && continue
+        # If SERVER is an MDNS name, sleep briefly & continue loop
+        [ "${SERVER%.local}" != "${SERVER}" ] && sleep 5 && continue
 
         # If ntp.org does not resolve, DNS is not up yet, retry, otherwise abort
         server_ip=$(getent hosts "ntp.org" | awk '{ print $1; exit }')
